@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ແມ່ສິງຄຳ ຂາຍເຄື່ອງສົ່ງ ແລະ ຍ່ອຍທົ່ວໄປ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- โครงสร้างใบเสร็จสำหรับสั่งพิมพ์ -->
+    <div id="receipt-print" class="printable-area">
+        <div style="text-align: center;">
+            <h2>ຮ້ານ ແມ່ສິງຄຳ</h2>
+            <p>ໃບເສັດຮັບເງິນ (Receipt)</p>
+            <p>----------------------------------</p>
+        </div>
+        <p>ວັນທີ: <span id="rDate"></span></p>
+        <table style="width: 100%; text-align: left; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px dashed #000;">
+                    <th style="text-align: left;">ລາຍການ</th>
+                    <th style="text-align: right;">ລາຄາ</th>
+                    <th style="text-align: center;">ຈຳນວນ</th>
+                    <th style="text-align: right;">ລວມ</th>
+                </tr>
+            </thead>
+            <tbody id="rItems"></tbody>
+        </table>
+        <p>----------------------------------</p>
+        <p style="display: flex; justify-content: space-between;">
+            <span>ຍອດລວມ:</span> <strong id="rTotal">0</strong> ກີບ
+        </p>
+        <p style="display: flex; justify-content: space-between;">
+            <span>ຮັບເງິນ:</span> <span id="rCash">0</span> ກີບ
+        </p>
+        <p style="display: flex; justify-content: space-between;">
+            <span>ເງິນທອນ:</span> <span id="rChange">0</span> ກີບ
+        </p>
+        <p style="text-align: center; margin-top: 15px;">=== ຂອບໃຈທີ່ອຸດໜູນ ===</p>
+    </div>
+
+    <header>
+        <h1>ລະບົບຈັດການຮ້ານແມ່ສິງຄຳ</h1>
+        <nav>
+            <button onclick="showPage('pos')">ຂາຍເຄື່ອງ</button>
+            <button onclick="showPage('inventory')">ຈັດການສະຕ໋ອກ</button>
+            <button onclick="showPage('reports')">ລາຍງານຍອດຂາຍ</button>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Page 1: ขายสินค้า (POS) -->
+        <section id="pos" class="page active-page">
+            <h2>ໜ້າຮ້ານ (POS)</h2>
+            
+            <div class="barcode-scanner-box">
+                <input type="text" id="barcodeInput" placeholder="ສະແກນບາໂຄດ ຫຼື ພີມລະຫັດສີນຄ້າ ແລະ ກົດ Enter..." autofocus onkeydown="handleBarcodeScan(event)">
+            </div>
+
+            <div class="pos-container">
+                <div class="product-grid" id="productGrid"></div>
+
+                <div class="cart-container">
+                    <h3>ລາຍການສີນຄ້າ ແລະ ໃບເກັບເງິນ</h3>
+                    <table class="cart-table">
+                        <thead>
+                            <tr>
+                                <th>ລາຍການສີນຄ້າ</th>
+                                <th>ລາຄາ</th>
+                                <th>ຈຳນວນ</th>
+                                <th>ລວມເປັນເງິນ</th>
+                                <th>ຈັດການ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartItems"></tbody>
+                    </table>
+
+                    <div class="payment-box">
+                        <div class="summary-line">
+                            <span>ຍອດລວມທັງໝົດ:</span>
+                            <span class="total-price"><strong id="cartTotal">0</strong> ກີບ</span>
+                        </div>
+                        
+                        <div class="pay-input-group">
+                            <label for="cashReceived">ຮັບເງິນ:</label>
+                            <input type="number" id="cashReceived" placeholder="0" oninput="calculateChange()"> ກີບ
+                        </div>
+
+                        <div class="summary-line change-line">
+                            <span>ເງິນທອນ:</span>
+                            <span class="change-price"><strong id="changeTotal">0</strong> ກີບ</span>
+                        </div>
+
+                        <button class="btn-primary" onclick="checkout()">ບັນທຶກການຂາຍ (ຈ່າຍເງິນ)</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Page 2: จัดการสต็อกสินค้า -->
+        <section id="inventory" class="page">
+            <h2>ຈັດການສະຕ໋ອກ</h2>
+            <form id="addProductForm" onsubmit="addProduct(event)">
+                <input type="text" id="pBarcode" placeholder="ລະຫັດບາໂຄດ" onkeydown="handleInventoryBarcodeScan(event)" onchange="checkExistingProduct(this.value)" required>
+                <input type="text" id="pName" placeholder="ຊື່ສີນຄ້າ">
+                <input type="number" id="pPrice" placeholder="ລາຄາ (ກີບ)" required>
+                <input type="number" id="pStock" placeholder="ຈຳນວນສະຕ໋ອກ" required>
+                <button type="submit" class="btn-success">ເພີ່ມ/ອັບເດດສີນຄ້າ</button>
+            </form>
+
+            <!-- ໄດ້ເພີ່ມ span id="totalProductCount" ໄວ້ສະແດງຈຳນວນສິນຄ້າ -->
+            <h3>ມີສີນຄ້າທັງໝົດໃນສະຕ໋ອກ <span id="totalProductCount" style="color: #d9534f; margin-left: 5px;">0</span></h3>
+            
+            <table id="inventoryTable">
+                <thead>
+                    <tr>
+                        <th>ບາໂຄດ</th>
+                        <th>ຊື່ສີນຄ້າ</th>
+                        <th>ລາຄາ</th>
+                        <th>ຍັງເຫຼືອ</th>
+                        <th>ຈັດການ</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryList"></tbody>
+            </table>
+        </section>
+
+        <!-- Page 3: รายงานยอดขาย -->
+        <section id="reports" class="page">
+            <h2>ລາຍງານຍອດຂາຍ</h2>
+            <div class="report-summary">
+                <div class="card">
+                    <h3>ຍອດຂາຍມື້ນີ້</h3>
+                    <p id="dailySales">0 ກີບ</p>
+                </div>
+                <div class="card">
+                    <h3>ຍອດຂາຍເດືອນນີ້</h3>
+                    <p id="monthlySales">0 ກີບ</p>
+                </div>
+            </div>
+
+            <h3>ປະຫວັດການຂາຍ</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ວັນ-ເວລາ</th>
+                        <th>ລາຍການ</th>
+                        <th>ຮັບເງິນ</th>
+                        <th>ເງິນທອນ</th>
+                        <th>ຍອດລວມ</th>
+                    </tr>
+                </thead>
+                <tbody id="salesHistoryList"></tbody>
+            </table>
+        </section>
+    </main>
+
+    <!-- Firebase App (required) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <!-- Firebase Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <!-- ໄຟລ໌ JavaScript ຫຼັກ -->
+    <script src="script.js"></script>
+</body>
+</html>
